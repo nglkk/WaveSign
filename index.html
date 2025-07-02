@@ -1,15 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head></head>
+    <head>
+        <title>WaveSign Application</title>
+        <h1>WaveSign</h1>
+    </head>
     <body>
         <div>Teachable Machine Image Model</div>
             <button type="button" onclick="init()">Start</button>
+            <button type="button" onclick="stopWebcam()">Stop</button>
+
+            <form id = "image-upload-form">
+                <label for="image-upload">Upload an image:</label>
+                <input type="file" id="image-upload" accept="image/*" onchange="handleImageUpload(event)">
+                <img id = "uploaded-image" style = "display: none; max-width: 200px; margin-top: 10px;">
+            </form>
+
+            <a href = "aslData.html">
+                <button type = "button">View ASL Images</button>
+            </a>
+
         <div id="webcam-container"></div>
         <div id="label-container"></div>
         
         <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
         <script type="text/javascript">
+
             // More API functions here:
             // https://github.com/googlecreativelab/teachablemachine-community/tree/master/libraries/image
 
@@ -61,6 +77,43 @@
                     labelContainer.childNodes[i].innerHTML = classPrediction;
                 }
             }
+
+            function stopWebcam() {
+                if (webcam) {
+                    webcam.stop();
+                    webcam.canvas.remove();
+                }
+            }   
+
+            document.getElementById("image-upload-form").addEventListener("submit", function(event) {
+                event.preventDefault(); 
+
+                const fileInput = document.getElementById("image-upload");
+                const file = fileInput.files[0];
+                const imageElement = document.getElementById("uploaded-image");
+
+                if (!file) {
+                    alert("Please upload an image.");
+                    return;
+                }
+
+                if (!model) {
+                    alert("Please click 'Start' to load model first.");
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imageElement.src = e.target.result;
+                    imageElement.style.display = "block";
+                    imageElement.onload = async function() {
+                        await predictImage(imageElement);
+                    };
+                };
+                reader.readAsDataURL(file);
+            });
+
+
         </script>
     </body>
 </html>
