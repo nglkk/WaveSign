@@ -6,15 +6,15 @@
     </head>
     <body>
         <div>Teachable Machine Image Model</div>
-            <button type="button" onclick="init()">Start</button>
-            <button type="button" onclick="stopWebcam()">Stop</button>
+            <button id = "start-button" type="button" onclick="init()">Start</button><br>
+            <button id = "stop-button" type="button" onclick="stopWebcam()">Stop</button>
 
-            <button type="button" onclick="startWebcam()">Start Webcam</button>
+            <button id = "webcam-button" type="button" onclick="startWebcam()">Start Webcam</button>
 
             <form id = "image-upload-form">
                 <label for="image-upload">Upload an image:</label>
                 <input type="file" id="image-upload" accept="image/*" onchange="handleImageUpload(event)">
-                <button type = "submit">Submit Image</button>
+                <br><button id = "submit-button" type = "submit">Submit Image</button>
                 <br>
                 <img id = "uploaded-image" style = "display: none; max-width: 200px; margin-top: 10px;">
             </form>
@@ -179,5 +179,16 @@
             }
 
         </script>
+
+        <style>
+            #start-button {
+                font-weight: bold;
+                font-size: 20px;
+                margin-bottom: 16px;
+            }
+            #stop-button, #webcam-button, #submit-button {
+                margin-bottom: 16px;
+            }
+        </style>
     </body>
 </html>
