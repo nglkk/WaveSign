@@ -6,10 +6,7 @@
     </head>
     <body>
         <div>Teachable Machine Image Model</div>
-            <button id = "start-button" type="button" onclick="init()">Start</button><br>
-            <button id = "stop-button" type="button" onclick="stopWebcam()">Stop</button>
-
-            <button id = "webcam-button" type="button" onclick="startWebcam()">Start Webcam</button>
+            <button id = "toggle-webcam" type="button" onclick="toggleWebcam()">Start/Stop</button>
 
             <form id = "image-upload-form">
                 <label for="image-upload">Upload an image:</label>
@@ -39,31 +36,19 @@
             let model, webcam, labelContainer, maxPredictions;
 
             // Load the image model and setup the webcam
-            async function init() {
-                const modelURL = URL + "model.json";
-                const metadataURL = URL + "metadata.json";
 
-                // load the model and metadata
-                model = await tmImage.load(modelURL, metadataURL);
-                maxPredictions = model.getTotalClasses();
+            async function loadModel() {
+                if (!model) {
+                    const modelURL = URL + "model.json";
+                    const metadataURL = URL + "metadata.json";
+                    model = await tmImage.load(modelURL, metadataURL);
+                    maxPredictions = model.getTotalClasses();
+                }
 
-                // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
-                // or files from your local hard drive
-                // Note: the pose library adds "tmImage" object to your window (window.tmImage)
-                
                 labelContainer = document.getElementById("label-container");
                 labelContainer.innerHTML = "";
                 for (let i = 0; i < maxPredictions; i++) {
                     labelContainer.appendChild(document.createElement("div"));
-                }
-
-                const imageElement = document.getElementById("uploaded-image");
-                if (imageElement && imageElement.src && imageElement.style.display !== "none") {
-                    // If an image is already uploaded, predict it
-                    await predictImage(imageElement);
-                } else {
-
-                    return;
                 }
             }
 
@@ -84,31 +69,30 @@
                 }
             }
 
-            async function predictImage(imageElement) {
-                if (!model) {
-                    alert("Model not loaded yet.")
-                    return;
+            async function toggleWebcam() {
+                const button = document.getElementById("toggle-webcam");
+
+                if (!webcam) {
+                    await startWebcam();
+                    button.textContent = "Start/Stop Webcam";
+                } else {
+                    stopWebcam();
+                    button.textContent = "Start/Stop Webcam";
                 }
+            }
+
+            async function predictImage(imageElement) {
+                await loadModel();
 
                 const prediction = await model.predict(imageElement);
-
                 labelContainer.innerHTML = "";
-
-                for (let i = 0; i < prediction.length; i++) {
-                    const classPrediction =
-                        prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+                for (let i = 0; i < maxPredictions; i++) {
+                    const classPrediction = prediction[i].className + ": " + prediction[i].probability.toFixed(2);
                     const div = document.createElement("div");
                     div.innerHTML = classPrediction;
                     labelContainer.appendChild(div);
                 }
-            }
-
-            function stopWebcam() {
-                if (webcam) {
-                    webcam.stop();
-                    webcam.canvas.remove();
-                }
-            }   
+            }  
 
             let uploadedImage = null;
 
@@ -125,7 +109,16 @@
                 reader.onload = function(e) {
                     imageElement.src = e.target.result;
                     imageElement.style.display = "block";
+
+                    // Stop and hide webcam if active
+                    if (webcam) {
+                        webcam.stop();
+                        webcam.canvas.remove();
+                        webcam = null;
+                    }
+
                     imageElement.onload = async function() {
+                        await loadModel();
                         await predictImage(imageElement);
                     };
                 };
@@ -135,17 +128,10 @@
             document.getElementById("image-upload-form").addEventListener("submit", function(event) {
                 event.preventDefault(); 
 
-                const fileInput = document.getElementById("image-upload");
-                const file = fileInput.files[0];
                 const imageElement = document.getElementById("uploaded-image");
 
-                if (!file) {
+                if (!imageElement || !imageElement.src || imageElement.style.display === "none") {
                     alert("Please upload an image.");
-                    return;
-                }
-
-                if (!model) {
-                    alert("Please click 'Start' to load model first.");
                     return;
                 }
 
@@ -154,14 +140,12 @@
             });
 
             async function startWebcam() {
-                if (!model) {
-                    alert("Please click 'Start' to load model first.");
-                    return;
-                }
+                await loadModel();
 
-                if (webcam) {
-                    return;
-                }
+                const imageElement = document.getElementById("uploaded-image");
+                imageElement.style.display = "none";
+
+                if (webcam) return;
 
                 const flip = true;
                 webcam = new tmImage.Webcam(200, 200, flip);
@@ -169,19 +153,21 @@
                 await webcam.play();
 
                 document.getElementById("webcam-container").appendChild(webcam.canvas);
-
-                labelContainer = document.getElementById("label-container");
-                labelContainer.innerHTML = "";
-                for (let i = 0; i < maxPredictions; i++) {
-                    labelContainer.appendChild(document.createElement("div"));
-                }
                 window.requestAnimationFrame(loop);
+            }
+
+            function stopWebcam() {
+                if (webcam) {
+                    webcam.stop();
+                    webcam.canvas.remove();
+                    webcam = null;
+                }
             }
 
         </script>
 
         <style>
-            #start-button {
+            #start-stop-button {
                 font-weight: bold;
                 font-size: 20px;
                 margin-bottom: 16px;
